@@ -11,7 +11,19 @@ import	(
 	"strconv"
 )
 
-func	displayScore() {
+func	displayScore(index int, reader *csv.Reader) {
+	total	:= index;
+	for {
+		_, err := reader.Read();
+		if err == io.EOF {
+			break ;
+		} else if err != nil {
+			log.Fatal(err)
+			return ;
+		}
+		total++;
+	}
+	fmt.Println("You scored", index - 1, "out of", total);
 }
 
 func	main() {
@@ -34,7 +46,7 @@ func	main() {
 	for {
 		lineTokens, err := reader.Read();
 		if err == io.EOF {
-			displayScore();
+			displayScore(index, reader);
 			return ;
 		} else if err != nil {
 			log.Fatal(err);
@@ -46,7 +58,17 @@ func	main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("Problem #%d:\t%s\t= %d\n", index, question, answerI);
+		fmt.Printf("Problem #%d:\t%s\t= ", index, question);
+		var	userAnswerS	string;
+		fmt.Scanln(&userAnswerS);
+		userAnswerI, err	:= strconv.Atoi(userAnswerS);
+		if err != nil {
+			log.Fatal(err);
+		}
+		if (userAnswerI != answerI) {
+			displayScore(index, reader);
+			return ;
+		}
 		index++;
 	}
 }
