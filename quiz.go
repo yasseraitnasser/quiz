@@ -6,55 +6,27 @@ import	(
 	"os"
 	"flag"
 	"encoding/csv"
-	"io"
-	"log"
-	"strconv"
 )
 
-func	displayScore(index int, reader *csv.Reader, flag int) {
-	total	:= index - flag + 1;
-	for {
-		_, err := reader.Read();
-		if err == io.EOF {
-			break ;
-		} else if err != nil {
-			log.Fatal(err)
-			return ;
-		}
-		total++;
-	}
+type	problem	struct {
+	q	string
+	a	string
+}
+
+func	displayScore(index int, total int) {
 	fmt.Println("You scored", index, "out of", total);
 	os.Exit(0);
 }
 
-func	quizAndDisplayScore(csvFile *os.File) {
-	reader	:= csv.NewReader(csvFile);
-	index	:= 0;
-	for {
-		lineTokens, err := reader.Read();
-		if err == io.EOF {
-			displayScore(index, reader, 1);
-		} else if err != nil {
-			log.Fatal(err);
+func	parseLines(lines [][]string) []problem {
+	ret	:= make([]problem, len(lines));
+	for i, line := range lines {
+		ret[i] = problem {
+			q: line[0],
+			a: line[1],
 		}
-		question	:= lineTokens[0];
-		answerS		:= lineTokens[1];
-		answerI, err	:= strconv.Atoi(answerS);
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("Problem #%d:\t%s\t= ", index, question);
-		var	userAnswerS	string;
-		fmt.Scanln(&userAnswerS);
-		userAnswerI, err	:= strconv.Atoi(userAnswerS);
-		if err != nil {
-			log.Fatal(err);
-		}
-		if (userAnswerI != answerI) {
-			displayScore(index, reader, 0);
-		}
-		index++;
 	}
+	return	ret;
 }
 
 func	main() {
@@ -74,5 +46,21 @@ func	main() {
 		os.Exit(1);
 	}
 	defer	csvFile.Close();
-	quizAndDisplayScore(csvFile);
+	reader	:= csv.NewReader(csvFile);
+	lines, err := reader.ReadAll();
+	if err != nil {
+		fmt.Printf("Failed to read the CSV file: %s\n", *fileNamePtr);
+		os.Exit(1);
+	}
+	problems	:= parseLines(lines);
+	length		:= len(problems);
+	for i, p := range problems {
+		fmt.Printf("Problem #%d:\t%s = ", i+1, p.q);
+		var	answer	string;
+		fmt.Scanf("%s\n", &answer);
+		if (answer != p.a) {
+			displayScore(i, length);
+		}
+	}
+	displayScore(length, length);
 }
