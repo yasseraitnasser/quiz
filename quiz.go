@@ -11,8 +11,8 @@ import	(
 	"strconv"
 )
 
-func	displayScore(index int, reader *csv.Reader) {
-	total	:= index;
+func	displayScore(index int, reader *csv.Reader, flag int) {
+	total	:= index - flag + 1;
 	for {
 		_, err := reader.Read();
 		if err == io.EOF {
@@ -23,34 +23,19 @@ func	displayScore(index int, reader *csv.Reader) {
 		}
 		total++;
 	}
-	fmt.Println("You scored", index - 1, "out of", total);
+	fmt.Println("You scored", index, "out of", total);
+	os.Exit(0);
 }
 
-func	main() {
-	var	fNameErrorMsg	string	= "a csv file in the format of 'question,answer'";
-	var	limitErrorMsg	string	= "the time limit for the quiz in seconds";
-	var	fileNamePtr	*string	= flag.String("csv", "problem.csv", fNameErrorMsg);
-	var	limitPtr	*int	= flag.Int("limit", 30, limitErrorMsg);
-
-	flag.Parse();
-	fmt.Println("file name:", *fileNamePtr);
-	fmt.Println("limit:", *limitPtr);
-	csvFile, err	:= os.Open(*fileNamePtr);
-	if err != nil {
-		fmt.Println("Error opening file:", err);
-		return;
-	}
-	defer	csvFile.Close();
+func	quizAndDisplayScore(csvFile *os.File) {
 	reader	:= csv.NewReader(csvFile);
-	index	:= 1;
+	index	:= 0;
 	for {
 		lineTokens, err := reader.Read();
 		if err == io.EOF {
-			displayScore(index, reader);
-			return ;
+			displayScore(index, reader, 1);
 		} else if err != nil {
 			log.Fatal(err);
-			// return ;
 		}
 		question	:= lineTokens[0];
 		answerS		:= lineTokens[1];
@@ -66,9 +51,28 @@ func	main() {
 			log.Fatal(err);
 		}
 		if (userAnswerI != answerI) {
-			displayScore(index, reader);
-			return ;
+			displayScore(index, reader, 0);
 		}
 		index++;
 	}
+}
+
+func	main() {
+	var	fNameErrorMsg	string	= "a csv file in the format of 'question,answer'";
+	var	limitErrorMsg	string	= "the time limit for the quiz in seconds";
+	var	fileNamePtr	*string	= flag.String("csv", "problem.csv", fNameErrorMsg);
+	var	limitPtr	*int	= flag.Int("limit", 30, limitErrorMsg);
+
+	flag.Parse();
+	// debug
+	fmt.Println("file name:", *fileNamePtr);
+	fmt.Println("limit:", *limitPtr);
+	// debug
+	csvFile, err	:= os.Open(*fileNamePtr);
+	if err != nil {
+		fmt.Printf("Failed to open the CSV file: %s\n", *fileNamePtr);
+		os.Exit(1);
+	}
+	defer	csvFile.Close();
+	quizAndDisplayScore(csvFile);
 }
