@@ -8,7 +8,7 @@ import	(
 	"encoding/csv"
 	"strings"
 	"time"
-	//"context"
+	"math/rand"
 )
 
 type	problem	struct {
@@ -35,8 +35,10 @@ func	parseLines(lines [][]string) []problem {
 func	main() {
 	var	fNameErrorMsg	string	= "a csv file in the format of 'question,answer'";
 	var	limitErrorMsg	string	= "the time limit for the quiz in seconds";
+	var	shuffleErrorMsg	string	= "the option to shuffle the questions in the CSV file";
 	var	fileNamePtr	*string	= flag.String("csv", "problem.csv", fNameErrorMsg);
 	var	limitPtr	*int	= flag.Int("limit", 30, limitErrorMsg);
+	var	shufflePtr	*bool	= flag.Bool("shuffle", false, shuffleErrorMsg);
 
 	flag.Parse();
 	csvFile, err	:= os.Open(*fileNamePtr);
@@ -52,6 +54,12 @@ func	main() {
 		os.Exit(1);
 	}
 	problems	:= parseLines(lines);
+	random		:= rand.New(rand.NewSource(time.Now().UnixNano()));
+	if *shufflePtr {
+		random.Shuffle(len(problems), func(i, j int) {
+			problems[i], problems[j] = problems[j], problems[i];
+		})
+	}
 	timer		:= time.NewTimer(time.Duration(*limitPtr) * time.Second);
 	correct		:= 0;
 	problemloop:
