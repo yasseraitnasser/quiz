@@ -7,6 +7,8 @@ import	(
 	"flag"
 	"encoding/csv"
 	"strings"
+	"time"
+	//"context"
 )
 
 type	problem	struct {
@@ -37,10 +39,6 @@ func	main() {
 	var	limitPtr	*int	= flag.Int("limit", 30, limitErrorMsg);
 
 	flag.Parse();
-	// debug
-	fmt.Println("file name:", *fileNamePtr);
-	fmt.Println("limit:", *limitPtr);
-	// debug
 	csvFile, err	:= os.Open(*fileNamePtr);
 	if err != nil {
 		fmt.Printf("Failed to open the CSV file: %s\n", *fileNamePtr);
@@ -54,14 +52,26 @@ func	main() {
 		os.Exit(1);
 	}
 	problems	:= parseLines(lines);
-	length		:= len(problems);
-	for i, p := range problems {
-		fmt.Printf("Problem #%d:\t%s = ", i+1, p.q);
-		var	answer	string;
-		fmt.Scanf("%s\n", &answer);
-		if (answer != p.a) {
-			displayScore(i, length);
+	timer		:= time.NewTimer(time.Duration(*limitPtr) * time.Second);
+	correct		:= 0;
+	problemloop:
+		for i, p := range problems {
+			fmt.Printf("Problem #%d:\t%s = ", i+1, p.q);
+			answerChannel	:= make(chan string);
+			go func() {
+				var	answer	string;
+				fmt.Scanf("%s\n", &answer);
+				answerChannel <- answer;
+			}()
+			select {
+				case <-timer.C:
+					fmt.Println();
+					break problemloop;
+				case answer := <- answerChannel:
+					if (answer == p.a) {
+						correct++;
+					}
+			}
 		}
-	}
-	displayScore(length, length);
+	displayScore(correct, len(problems));
 }
